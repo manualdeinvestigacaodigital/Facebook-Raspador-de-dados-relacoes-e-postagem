@@ -1,4 +1,7 @@
 <p align="center">
+  <img src="https://raw.githubusercontent.com/manualdeinvestigacaodigital/facebook-raspador-de-dados-web-scraper/main/Face.png" width="140">
+</p>
+<p align="center">
   <img src="imagens/01-painel-inicial.png" alt="Painel inicial do Raspador de dados de relações e postagens do Facebook" width="900">
 </p>
 
