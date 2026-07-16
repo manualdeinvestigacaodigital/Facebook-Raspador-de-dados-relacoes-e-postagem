@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/manualdeinvestigacaodigital/facebook-raspador-de-dados-web-scraper/main/Face.png" width="140">
 </p>
 <p align="center">
-  <img src="imagens/01-painel-inicial.png" alt="Painel inicial do Raspador de dados de relações e postagens do Facebook" width="900">
+  <img src="imagens/01-painel-inicial.png" alt="Painel inicial do Raspador de dados de relações e postagens do Facebook" width="620">
 </p>
 
 <h1 align="center">Raspador de Dados de Relações e Postagens do Facebook</h1>
@@ -191,7 +191,7 @@ Também existe a opção:
 Essa opção permite incluir na mesma coleta os perfis materializados pelo Facebook nos grupos de reação.
 
 <p align="center">
-  <img src="imagens/01-painel-inicial.png" alt="Painel inicial da ferramenta" width="900">
+  <img src="imagens/01-painel-inicial.png" alt="Painel inicial da ferramenta" width="620">
 </p>
 
 A ferramenta identifica automaticamente o contexto atualmente aberto:
