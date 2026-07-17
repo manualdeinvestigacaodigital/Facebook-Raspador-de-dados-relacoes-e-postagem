@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Raspador de dados de relações e postagens do Facebook",
-  "version": "44.21.15",
-  "description": "Base V44R21R14 preservada; corrige exclusivamente a associação da mídia do REEL, aceitando apenas MP4/poster vinculados ao ID ativo ou ao vídeo visível da rota. PHOTO e POST permanecem congelados.",
+  "version": "44.21.19",
+  "description": "Base estável 44.21.15 preservada; correção cirúrgica na camada DOM/GraphQL: IDs canônicos, fusão sem duplicatas e terminal por registros únicos. PHOTO e mídia/coletores de REEL congelados.",
   "minimum_chrome_version": "114",
   "permissions": [
     "tabs",
@@ -32,6 +32,7 @@
       "js": [
         "main_world_hook.js",
         "post_reaction_main_hook.js",
+        "post_comment_main_hook.js",
         "reel_evidence_main_hook.js"
       ],
       "run_at": "document_start",
@@ -46,6 +47,7 @@
         "unified_preflight.js",
         "content.js",
         "post_reaction_bridge.js",
+        "post_comment_bridge.js",
         "reel_evidence_bridge.js",
         "post_scraper_module.js",
         "unified_controller.js"

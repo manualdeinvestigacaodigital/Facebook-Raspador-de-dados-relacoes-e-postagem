@@ -6,7 +6,7 @@ núcleo relacional V43 preservado byte a byte.
 */
 (function(){
 'use strict';
-var CONTROLLER_VERSION_V44R21R8='44.21.13';
+var CONTROLLER_VERSION_V44R21R8='44.21.19';
 if(window.__FB_B35_UNIFIED_CONTROLLER_V44__){
   if(String(window.__FB_B35_UNIFIED_CONTROLLER_V44__.version||'')===CONTROLLER_VERSION_V44R21R8){try{window.__FB_B35_UNIFIED_CONTROLLER_V44__.show();}catch(_){}return;}
   try{if(window.__FB_B35_UNIFIED_CONTROLLER_V44__.destroy)window.__FB_B35_UNIFIED_CONTROLLER_V44__.destroy();}catch(_){}
