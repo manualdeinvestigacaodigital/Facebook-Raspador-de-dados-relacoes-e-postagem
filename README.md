@@ -45,7 +45,7 @@ Quando o Facebook não materializa todo o conteúdo declarado, o resultado é ap
 ## Interface principal
 
 <p align="center">
-  <img src="imagens/01-painel-inicial.png" width="900" alt="Painel inicial da ferramenta">
+  <img src="imagens/01-painel-inicial.png" width="520" alt="Painel inicial da ferramenta">
 </p>
 
 O painel reúne dois fluxos principais:
@@ -216,7 +216,7 @@ Os resultados podem conter:
 - quantidade de perfis efetivamente observados.
 
 <p align="center">
-  <img src="imagens/04-interacoes-anonimizadas.png" width="900" alt="Exemplo anonimizado de interações">
+  <img src="imagens/04-interacoes-anonimizadas.png" width="520" alt="Exemplo anonimizado de interações">
 </p>
 
 > As imagens demonstrativas podem conter dados fictícios ou anonimizados.
@@ -234,7 +234,7 @@ A ferramenta permite selecionar individualmente:
 - **CSV**
 
 <p align="center">
-  <img src="imagens/02-formatos-exportacao.png" width="900" alt="Seleção de formatos de exportação">
+  <img src="imagens/02-formatos-exportacao.png" width="520" alt="Seleção de formatos de exportação">
 </p>
 
 O painel de exportação apresenta:
@@ -266,7 +266,7 @@ O relatório HTML organiza visualmente:
 - data e hora do export.
 
 <p align="center">
-  <img src="imagens/03-relatorio-postagem.png" width="900" alt="Exemplo de relatório estruturado">
+  <img src="imagens/03-relatorio-postagem.png" width="520" alt="Exemplo de relatório estruturado">
 </p>
 
 ---
