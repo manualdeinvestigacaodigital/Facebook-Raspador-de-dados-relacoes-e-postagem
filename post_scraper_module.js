@@ -1,11 +1,11 @@
 /*
-Raspador de dados de relações e postagens do Facebook — módulo de postagem V44R21R19
+Raspador de dados de relações e postagens do Facebook — módulo de postagem V44R21R28 — UI/exportação de vídeo somente
 Origem preservada: BOOKMARKLET_FACEBOOK_v1.1.1_ALL_COMMENTS_GATE.js
 Integração: execução sob demanda, HTML vertical padrão, scroll terminal de foto/post, gate estrito de Todos os comentários e avatar do perfil target-bound.
 */
 (function(){
 'use strict';
-var POST_MODULE_VERSION='1.1.1-ALL-COMMENTS-GATE-2026-07-12+V44R21R19-CANONICAL-ID-MERGE-TERMINAL';
+var POST_MODULE_VERSION='1.1.1-ALL-COMMENTS-GATE-2026-07-12+V44R21R28-UI-VIDEO-HTML';
 if(window.__FB_POST_SCRAPER_V44__){
   if(String(window.__FB_POST_SCRAPER_V44__.version||'')===POST_MODULE_VERSION)return;
   try{if(window.__FB_POST_SCRAPER_V44__.stop)window.__FB_POST_SCRAPER_V44__.stop();}catch(_){}
@@ -4192,13 +4192,17 @@ var mediaHtml = '';
   if (p.media && p.media.type === 'video' && (p.media.url || p.media.poster)) {
     var reelUrlV44R21R14 = safeExportUrl(p.media.url || '', false);
     var reelPosterV44R21R14 = safeExportUrl(p.media.poster || '', false);
-    mediaHtml += '<div class="mediaBox"><h2>🎬 Mídia do Reels</h2>';
+    var isReelReportV44R28 = !!(p.media.reelId || p.audit && p.audit.context === 'REEL');
+    var videoTitleV44R28 = isReelReportV44R28 ? '🎬 Mídia do Reels' : '🎬 Mídia do vídeo';
+    var videoFileV44R28 = isReelReportV44R28 ? 'facebook_reels_video.mp4' : 'facebook_video.mp4';
+    mediaHtml += '<div class="mediaBox"><h2>' + videoTitleV44R28 + '</h2>';
     if (reelUrlV44R21R14) {
-      mediaHtml += '<video src="' + escA(reelUrlV44R21R14) + '"' + (reelPosterV44R21R14 ? ' poster="' + escA(reelPosterV44R21R14) + '"' : '') + ' controls style="width:480px;max-width:100%;border-radius:10px;border:1px solid #e6e6e6"></video>' +
-        '<div><a href="' + escA(reelUrlV44R21R14) + '" download="facebook_reels_video.mp4" style="display:inline-block;margin-top:8px;padding:6px 12px;border-radius:6px;background:#198754;color:#fff;font-weight:bold;text-decoration:none;font-size:13px;">⬇️ Baixar vídeo completo</a></div>';
+      mediaHtml += '<video src="' + escA(reelUrlV44R21R14) + '"' + (reelPosterV44R21R14 ? ' poster="' + escA(reelPosterV44R21R14) + '"' : '') + ' controls playsinline preload="metadata" style="width:480px;max-width:100%;border-radius:10px;border:1px solid #e6e6e6"></video>' +
+        '<div class="v44VideoDownloads"><a href="' + escA(reelUrlV44R21R14) + '" target="_blank" rel="noopener noreferrer" download="' + videoFileV44R28 + '" style="display:inline-block;margin-top:8px;padding:7px 12px;border-radius:6px;background:#198754;color:#fff;font-weight:bold;text-decoration:none;font-size:13px;">⬇️ Baixar ou abrir vídeo completo</a></div>' +
+        '<div style="margin-top:6px;font-size:11px;color:#64748b;">Se o navegador abrir o vídeo em uma nova guia, use “Salvar vídeo como…”. A URL assinada foi preservada exatamente como observada na sessão.</div>';
     } else if (reelPosterV44R21R14) {
-      mediaHtml += '<img src="' + escA(reelPosterV44R21R14) + '" alt="Poster do Reel" style="width:480px;max-width:100%;border-radius:10px;border:1px solid #e6e6e6">' +
-        '<div class="warn">O Facebook materializou o poster, mas não expôs uma URL MP4 reutilizável nesta sessão. O relatório preserva a evidência visual sem inventar o arquivo de vídeo.</div>';
+      mediaHtml += '<img src="' + escA(reelPosterV44R21R14) + '" alt="Poster do vídeo" style="width:480px;max-width:100%;border-radius:10px;border:1px solid #e6e6e6">' +
+        '<div class="warn">O Facebook materializou o poster, mas não expôs uma URL de vídeo reutilizável nesta sessão. O relatório preserva a evidência visual sem inventar o arquivo.</div>';
     }
     mediaHtml += '</div>';
   }
@@ -4661,6 +4665,25 @@ function collectPhotoMedia(panel) {
     console.warn('Erro em collectPhotoMedia:', e);
     return null;
   }
+}
+
+/* V44R21R28 — captura visual cirúrgica de vídeo. Não altera comentários,
+   relações, navegação, scroll, métricas ou qualquer fluxo estável. */
+function visiblePostVideoSnapshotV44R21R28(panel){
+  try{
+    var directVideoRoute=/\/(?:videos)\/\d+|\/watch\/?\?v=\d+/i.test(String(location.href||'')),scope=panel&&panel.querySelectorAll?panel:null,list=[];
+    if(scope)list=Array.prototype.slice.call(scope.querySelectorAll('video'));
+    if(!list.length&&directVideoRoute)list=Array.prototype.slice.call(document.querySelectorAll('video'));
+    list=list.filter(function(v){try{return v&&!v.closest('#fb-b35-unified-v44-panel')&&U.vis(v)&&v.getBoundingClientRect().width>=220&&v.getBoundingClientRect().height>=150;}catch(_){return false;}});
+    var best=null;
+    list.forEach(function(v){try{
+      var r=v.getBoundingClientRect(),source=v.querySelector&&v.querySelector('source[src]'),url=String(v.currentSrc||v.src||source&&source.src||''),poster=String(v.poster||''),score=r.width*r.height-Math.abs((r.left+r.width/2)-innerWidth/2)*40;
+      if(!/^https?:/i.test(url))url='';if(!/^https?:/i.test(poster))poster='';
+      if(!url&&!poster)return;
+      if(!best||score>best.score)best={type:'video',url:url,poster:poster,source:'VISIBLE_VIDEO_EXACT_POST_SURFACE_V44R21R28',score:score,mediaBinding:{status:'VISIBLE_EXACT_POST_SURFACE',reason:scope&&scope.contains(v)?'VIDEO_INSIDE_SELECTED_POST_SURFACE':'UNIQUE_VISIBLE_VIDEO_ON_DIRECT_VIDEO_ROUTE'}};
+    }catch(_){} });
+    return best;
+  }catch(_){return null;}
 }
 
 
@@ -5469,7 +5492,7 @@ function reelMediaSnapshotV44R21R14(){
   var media=allMedia.filter(function(x){return sameRoute&&x&&x.bound===true&&(!x.routeId||String(x.routeId)===String(id));}).sort(function(a,b){return Number(b.score||0)-Number(a.score||0);});
   var posters=allPosters.filter(function(x){return sameRoute&&x&&x.bound===true&&(!x.routeId||String(x.routeId)===String(id));}).sort(function(a,b){return Number(b.score||0)-Number(a.score||0);});
   var url='',poster='',source='',binding='';
-  for(var i=0;i<media.length;i++){if(/^https?:/i.test(String(media[i].url||''))){url=String(media[i].url);source='REEL_GRAPHQL_EXACT_BOUND_MEDIA_V44R21R15';binding=String(media[i].bindingReason||'GRAPHQL_OBJECT_CONTAINS_ACTIVE_REEL_ID');break;}}
+  for(var i=0;i<media.length;i++){if(/^https?:/i.test(String(media[i].url||''))){url=String(media[i].url);binding=String(media[i].bindingReason||'GRAPHQL_OBJECT_CONTAINS_ACTIVE_REEL_ID');source=/REQUEST_CONTAINS_ACTIVE_REEL_ID/i.test(binding)?'REEL_GRAPHQL_REQUEST_BOUND_MEDIA_V44R21R28':'REEL_GRAPHQL_EXACT_BOUND_MEDIA_V44R21R15';break;}}
   if(!url&&visible&&visible.routeBound&&visible.url){url=visible.url;source='REEL_VISIBLE_EXACT_BOUND_MEDIA_V44R21R15';binding=visible.bindingReason||'VISIBLE_VIDEO_BOUND';}
   for(var j=0;j<posters.length;j++){if(/^https?:/i.test(String(posters[j].url||''))){poster=String(posters[j].url);if(!binding)binding=String(posters[j].bindingReason||'GRAPHQL_OBJECT_CONTAINS_ACTIVE_REEL_ID');break;}}
   if(!poster&&visible&&visible.routeBound&&visible.poster)poster=visible.poster;
@@ -5713,7 +5736,7 @@ function startHarvest(){
         var authorSnap=pair[1]||{},meta=mergePostHeaderMetadataV44R16(collectMeta(),pair[2]||{}),counts=collectCounts();if(isPhotoContext())meta=mergePhotoMetadataV44R21R9(meta);
         if((counts.comment==null||counts.comment===0)&&target>0)counts.comment=target;
         try{if(window.__FB_MERGE_POST_META_V44__)meta=window.__FB_MERGE_POST_META_V44__(meta,authorSnap);}catch(_){}
-        var media=null;try{if(isReelContext())media=reelMediaSnapshotV44R21R14();else if(isPhotoContext())media=__POST_MEDIA_SNAPSHOT_V44R21R9__||photoMainMediaSnapshotV44R21R9()||collectPhotoMedia(document.body)||collectPhotoMedia(panel);else media=collectPhotoMedia(panel);}catch(_){media=isPhotoContext()?__POST_MEDIA_SNAPSHOT_V44R21R9__:(isReelContext()?reelMediaSnapshotV44R21R14():null);}
+        var media=null;try{if(isReelContext())media=reelMediaSnapshotV44R21R14();else if(isPhotoContext())media=__POST_MEDIA_SNAPSHOT_V44R21R9__||photoMainMediaSnapshotV44R21R9()||collectPhotoMedia(document.body)||collectPhotoMedia(panel);else media=visiblePostVideoSnapshotV44R21R28(panel)||collectPhotoMedia(panel);}catch(_){media=isPhotoContext()?__POST_MEDIA_SNAPSHOT_V44R21R9__:(isReelContext()?reelMediaSnapshotV44R21R14():null);}
         var terminal=harvested.collectionAudit||null,total=Number(harvested.L1||0)+Number(harvested.L2||0);
         var payload={L1:harvested.L1,L2:harvested.L2,rows:harvested.rows,meta:meta,counts:counts,media:media,audit:{schemaVersion:1,toolVersion:FB_TOOL_VERSION,runStartedAt:FB_RUN_STARTED_AT.toISOString(),collectedAt:new Date().toISOString(),sourceUrlAtStart:FB_SOURCE_URL_AT_START,sourceUrlAtExport:String(location.href||''),context:isReelContext()?'REEL':(isPhotoContext()?'PHOTO':'POST'),userAgent:String((navigator&&navigator.userAgent)||''),status:(window.__HUDH__&&window.__HUDH__.stop&&window.__HUDH__.stop())?'PARTIAL_USER_STOP':(((terminal&&Number(terminal.declaredTarget||0)>0?Number(terminal.declaredTarget||0):target)>0&&total<(terminal&&Number(terminal.declaredTarget||0)>0?Number(terminal.declaredTarget||0):target))?'PARTIAL_DECLARED_GAP':'COMPLETED'),collectionBasis:isPhotoContext()?'PHOTO: filtro Todos os comentários confirmado no painel da foto antes da colheita; cabeçalho e avatares vinculados à identidade exata; comentários e respostas coletados até o alvo ou fim real. Dados ausentes não são presumidos.':(isReelContext()?'REEL: painel target-bound com trava de rota, fusão DOM + respostas GraphQL sanitizadas e mídia/poster vinculados ao ID do Reel. Dados ausentes não são presumidos.':'POST: diálogo modal vinculado à rota ativa, paginação DOM + GraphQL, IDs canônicos e terminal calculado somente por registros únicos; dados ausentes não são presumidos.'),allCommentsGate:window.__FB_ALL_COMMENTS_GATE__?JSON.parse(JSON.stringify(window.__FB_ALL_COMMENTS_GATE__)):null,collectionTerminal:terminal}};
         cleanPayloadRows(payload);if(!isPhotoContext())postRefreshPayloadTerminalV44R21R19(payload);window.__HUDH__.set(86,'Processando avatares dos comentários…');

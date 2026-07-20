@@ -6,7 +6,7 @@ núcleo relacional V43 preservado byte a byte.
 */
 (function(){
 'use strict';
-var CONTROLLER_VERSION_V44R21R8='44.21.19';
+var CONTROLLER_VERSION_V44R21R8='44.21.28';
 if(window.__FB_B35_UNIFIED_CONTROLLER_V44__){
   if(String(window.__FB_B35_UNIFIED_CONTROLLER_V44__.version||'')===CONTROLLER_VERSION_V44R21R8){try{window.__FB_B35_UNIFIED_CONTROLLER_V44__.show();}catch(_){}return;}
   try{if(window.__FB_B35_UNIFIED_CONTROLLER_V44__.destroy)window.__FB_B35_UNIFIED_CONTROLLER_V44__.destroy();}catch(_){}
@@ -40,7 +40,11 @@ var state={
   relationPhysicalPct:0,
   minimized:false,
   postRunKey:'',
-  scrapeInteractions:false
+  scrapeInteractions:false,
+  relationSelection:'all',
+  relationSuiteResults:{},
+  relationSuiteCompleted:false,
+  relationSuiteTarget:''
 };
 var routeTimer=null,observer=null,statusTimer=null,domTimer=null;
 var postCtxCache={url:'',at:0,value:null};
@@ -82,7 +86,6 @@ function postContext(force){
 }
 function currentRelation(){
   var u=String(location.pathname+location.search);
-  if(/(?:\/|[?&]sk=)friends_all(?:\/|$|&)/i.test(u))return 'friends';
   if(/(?:\/|[?&]sk=)friends(?:\/|$|&)/i.test(u))return 'friends';
   if(/(?:\/|[?&]sk=)followers(?:\/|$|&)/i.test(u))return 'followers';
   if(/(?:\/|[?&]sk=)following(?:\/|$|&)/i.test(u))return 'following';
@@ -184,7 +187,7 @@ function textMatchesFriends(raw){
 function hrefMatchesFriends(href){
   try{
     var x=new URL(String(href||''),location.href),u=x.pathname+x.search;
-    return /(?:\/friends(?:_all)?(?:\/|$)|[?&]sk=friends(?:_all)?(?:&|$))/i.test(u)&&!/friends\/requests|[?&]sk=following|[?&]sk=followers/i.test(u);
+    return /(?:\/friends(?:\/|$)|[?&]sk=friends(?:&|$))/i.test(u)&&!/friends\/requests|[?&]sk=following|[?&]sk=followers/i.test(u);
   }catch(_){return false;}
 }
 function candidateFriendsLink(root){
@@ -201,7 +204,7 @@ function candidateFriendsLink(root){
   ranked.sort(function(a,b){return b.score-a.score;});return ranked[0]||null;
 }
 function relationFromVisibleLabelV44R10(raw){var x=t(raw).toLowerCase().replace(/[0-9.,]+\s*(mil|k|m)?/g,'').replace(/[·•|()]/g,' ').replace(/\s+/g,' ').trim();if(x==='amigos'||x==='friends')return 'friends';if(x==='seguidores'||x==='followers')return 'followers';if(x==='seguindo'||x==='following')return 'following';return '';}
-function selectedRelationV44R10(){var nodes=Array.prototype.slice.call(document.querySelectorAll('[role="tab"][aria-selected="true"],a[aria-current="page"],[aria-selected="true"][href]')).filter(visible),best=null;nodes.forEach(function(el,i){var label=t(el.getAttribute('aria-label')||el.innerText||el.textContent||''),rel=relationFromVisibleLabelV44R10(label),href=String(el.href||el.getAttribute('href')||'');if(!rel){if(/\/followers(?:\/|$|[?#])|[?&]sk=followers/i.test(href))rel='followers';else if(/\/following(?:\/|$|[?#])|[?&]sk=following/i.test(href))rel='following';else if(/\/friends(?:_all)?(?:\/|$|[?#])|[?&]sk=friends/i.test(href))rel='friends';}if(!rel)return;var score=(el.getAttribute('aria-selected')==='true'?300:0)+(el.getAttribute('aria-current')==='page'?180:0)+(el.getAttribute('role')==='tab'?70:0)-i*.001;if(!best||score>best.score)best={relation:rel,score:score,element:el,href:href,label:label};});return best;}
+function selectedRelationV44R10(){var nodes=Array.prototype.slice.call(document.querySelectorAll('[role="tab"][aria-selected="true"],a[aria-current="page"],[aria-selected="true"][href]')).filter(visible),best=null;nodes.forEach(function(el,i){var label=t(el.getAttribute('aria-label')||el.innerText||el.textContent||''),rel=relationFromVisibleLabelV44R10(label),href=String(el.href||el.getAttribute('href')||'');if(!rel){if(/\/followers(?:\/|$|[?#])|[?&]sk=followers/i.test(href))rel='followers';else if(/\/following(?:\/|$|[?#])|[?&]sk=following/i.test(href))rel='following';else if(/\/friends(?:\/|$|[?#])|[?&]sk=friends/i.test(href))rel='friends';}if(!rel)return;var score=(el.getAttribute('aria-selected')==='true'?300:0)+(el.getAttribute('aria-current')==='page'?180:0)+(el.getAttribute('role')==='tab'?70:0)-i*.001;if(!best||score>best.score)best={relation:rel,score:score,element:el,href:href,label:label};});return best;}
 function materializedRelationV44R10(api){var x=selectedRelationV44R10();if(x)return x;try{var d=api&&api.detectActiveRelationSurface?api.detectActiveRelationSurface():null;if(d&&d.trusted===true&&d.relation)return {relation:String(d.relation),diagnostic:d};}catch(_){}var r=currentRelation(),bare=/\/friends\/?(?:[?#].*)?$/i.test(String(location.href||''));if(r&&!(r==='friends'&&bare))return {relation:r};return null;}
 function bindRelationBeforeRunV44R10(api,rel){if(!api||!api.state)return;var now=new Date().toISOString(),st=api.state;st.relation=rel;st.relationSurfaceBlocked=false;st.relationUiHint={relation:rel,label:'materialized_'+rel,href:String(location.href||''),source:'user_click_capture',confidence:500,at:now,targetUser:String(st.pageTargetKey||'')};st.relationIntent={relation:rel,source:'user_click_capture',confidence:500,explicitUser:true,at:now,targetUser:String(st.pageTargetKey||'')};st.relationRunContext={locked:false,active:false,relation:'',target:0,rawTarget:0,targetConfirmed:false,source:'',confidence:0,startedAt:'',completedAt:''};try{if(api.refreshRelationTargetFromDom)api.refreshRelationTargetFromDom('unified_v44r10_materialized',true);}catch(_){}}
 
@@ -223,44 +226,50 @@ function relationSnapshot(){
   }catch(_){return {available:true,relation:rel,busy:false,collected:0,enriched:0,target:0,targetConfirmed:false,listPct:0,physicalPct:Number(state.relationPhysicalPct||0),metaPct:0};}
 }
 async function waitForRelationCore(ms){var deadline=Date.now()+(ms||25000);while(Date.now()<deadline){var api=core();if(api&&typeof api.autoScrollCollectAndEnrich==='function')return api;await wait(250);}return null;}
-async function autoStartFriends(pending){
-  if(state.relationAutoRunning)return;state.relationAutoRunning=true;state.relationNavRunning=false;state.activeRun='relation';state.mode='relation';state.error='';state.status='Superfície de relações aberta. Confirmando a subguia ativa sem novo refresh…';render();
-  var api=await waitForRelationCore(25000);if(!api){state.relationAutoRunning=false;state.error='O núcleo relacional não ficou pronto.';await clearPending();render();return;}
-  var selected=null,deadline=Date.now()+10000;while(Date.now()<deadline){selected=materializedRelationV44R10(api);if(selected&&selected.relation)break;await wait(250);}
-  if(!selected||!selected.relation){state.relationAutoRunning=false;state.error='Nenhuma relação materializada foi confirmada. Não haverá refresh repetido.';await clearPending();render();return;}
-  state.relation=selected.relation;bindRelationBeforeRunV44R10(api,selected.relation);state.status='Raspagem de '+relationLabel(selected.relation)+' iniciada automaticamente.';render();
-  try{var run=Promise.resolve(api.autoScrollCollectAndEnrich());await clearPending();await run;state.status='Raspagem de '+relationLabel(selected.relation)+' finalizada ou pronta para exportação.';}catch(e){if(!/STOP/i.test(String(e&&e.message||e)))state.error='Falha relacional: '+String(e&&e.message||e);}
-  state.relationAutoRunning=false;render();
+function unavailableRelationResultV44R27(api,relation,materialized,reason){
+  if(api&&api.makeUnavailableRelationSnapshot)return api.makeUnavailableRelationSnapshot(relation,materialized,reason);
+  return {schema:'b35a1_relation_snapshot_442127',release:'44.21.27',relation:relation,materializedRelation:materialized||'',rows:[],unavailable:true,closureReason:reason||'relation_not_materialized_current_document'};
 }
-async function arriveAtFriends(pending){state.relationNavRunning=false;if(pending&&pending.autoStart!==false){await autoStartFriends(pending);return;}await clearPending();state.status='Superfície de relações aberta.';render();}
+function suiteCountsV44R27(){
+  var out={friends:0,following:0,followers:0,unique:0,unavailable:[]},api=core();
+  ['friends','following','followers'].forEach(function(r){var x=state.relationSuiteResults&&state.relationSuiteResults[r];out[r]=x&&x.rows?x.rows.length:0;if(!x||x.unavailable)out.unavailable.push(r);});
+  try{var sm=api&&api.relationSuiteSummary?api.relationSuiteSummary(state.relationSuiteResults||{}):null;if(sm){out.unique=Number(sm.uniqueProfiles||0);out.unavailable=sm.unavailable||out.unavailable;}}catch(_){}
+  if(!out.unique)out.unique=out.friends+out.following+out.followers;return out;
+}
+async function autoStartFriends(pending){
+  if(state.relationAutoRunning)return;state.relationAutoRunning=true;state.relationNavRunning=false;state.relationSuiteCompleted=false;state.activeRun='relation';state.mode='relation';state.error='';state.status='Confirmando a coleção relacional materializada e seu corredor estrutural…';render(true);
+  var api=await waitForRelationCore(25000);if(!api||typeof api.runExactRelation!=='function'){state.relationAutoRunning=false;state.error='O coletor relacional exato 44.21.27 não ficou pronto.';render(true);return;}
+  var suiteTarget=String(api.state&&api.state.pageTargetKey||profileIdentity(resolveProfileRoot())||'current_document');if(state.relationSuiteTarget&&state.relationSuiteTarget!==suiteTarget){state.relationSuiteResults={};}state.relationSuiteTarget=suiteTarget;
+  var detected=api.detectExactMaterializedRelation?api.detectExactMaterializedRelation():null,materialized=detected&&detected.relation||'';
+  if(!materialized){state.relationAutoRunning=false;state.relationSuiteCompleted=true;['friends','following','followers'].forEach(function(r){if(!state.relationSuiteResults[r])state.relationSuiteResults[r]=unavailableRelationResultV44R27(api,r,'','selected_relation_not_materialized');});if(api.restoreRelationSuite)api.restoreRelationSuite(state.relationSuiteResults);state.status='Nenhuma coleção nominal foi materializada nesta página. Resultados anteriores do mesmo perfil foram preservados e o estado atual está disponível para exportação.';render(true);return;}
+  var selection=state.relationSelection||'all',requested=selection==='all'?materialized:selection;
+  if(selection!=='all'&&requested!==materialized){state.relationSuiteResults[requested]=unavailableRelationResultV44R27(api,requested,materialized,'requested_'+requested+'_but_materialized_'+materialized);if(api.restoreRelationSuite)api.restoreRelationSuite(state.relationSuiteResults);state.relationAutoRunning=false;state.relationSuiteCompleted=true;state.status=relationLabel(requested)+' não está materializada. A página exibe '+relationLabel(materialized)+'. Resultado auditável disponível.';render(true);return;}
+  state.relation=materialized;state.status='Coletando '+relationLabel(materialized)+' até o limite semântico da própria coleção…';render(true);
+  try{
+    var result=await api.runExactRelation(materialized,{enrich:true,maxMs:60000,maxRounds:100});
+    state.relationSuiteResults[materialized]=api.snapshotRelation?api.snapshotRelation(materialized):{relation:materialized,rows:[]};
+    if(selection==='all'){
+      ['friends','following','followers'].forEach(function(r){if(!state.relationSuiteResults[r])state.relationSuiteResults[r]=unavailableRelationResultV44R27(api,r,materialized,'relation_not_materialized_current_document_no_navigation');});
+      if(api.restoreRelationSuite)api.restoreRelationSuite(state.relationSuiteResults);
+    }
+    state.relationSuiteCompleted=true;var counts=suiteCountsV44R27(),suffix=result&&result.complete===false?' — snapshot parcial seguro':' — terminal comprovado';
+    state.status=(selection==='all'?'Coleção materializada concluída e agregada: Amigos '+counts.friends+' · Seguindo '+counts.following+' · Seguidores '+counts.followers+' · '+counts.unique+' perfis únicos':relationLabel(materialized)+' concluído: '+Number(counts[materialized]||0)+' perfis')+suffix+'.'+(selection==='all'?' Para agregar outra relação deste mesmo perfil, selecione-a manualmente no Facebook e clique novamente; os resultados anteriores serão preservados.':'');
+  }catch(e){state.error='Falha relacional auditável: '+String(e&&e.message||e);state.status='Os registros já confirmados foram preservados.';}
+  state.relationAutoRunning=false;await clearPending();render(true);
+}
+async function arriveAtFriends(pending){await clearPending();return autoStartFriends(pending||{});}
 async function clickFriendsFromProfile(pending){
-  if(!pending||!pending.root)return;state.relationNavRunning=true;state.activeRun='relation';state.mode='relation';state.status='Abrindo a superfície de relações uma única vez…';render();
-  var found=candidateFriendsLink(pending.root);if(found){pending.phase='single_spa_click';pending.navigationIssued=true;await savePending(pending);try{found.a.click();}catch(_){}var end=Date.now()+8000;while(Date.now()<end){if(currentRelation()||selectedRelationV44R10()){await arriveAtFriends(pending);return;}await wait(250);}}
-  var dest=relationUrl(pending.root,'friends');if(!dest){state.relationNavRunning=false;state.error='Não foi possível formar a URL de relações.';await clearPending();render();return;}
-  pending.phase='single_hard_navigation';pending.navigationIssued=true;await savePending(pending);location.assign(dest);
+  state.relationNavRunning=false;await clearPending();state.activeRun='relation';state.mode='relation';state.error='Abra manualmente a área de relações do perfil. A versão 44.21.27 não clica em links, não troca a URL e não atualiza a página.';state.status='Navegação automática bloqueada pela política de não regressão.';render(true);
 }
 async function beginFriendsDownload(){
-  if(state.relationNavRunning||state.relationAutoRunning||relationSnapshot().busy)return;state.interactionUntil=Date.now()+900;var root=resolveProfileRoot();state.activeRun='relation';state.mode='relation';state.relation='friends';state.relationPhysicalPct=0;state.error='';state.status='Comando recebido. Preparando a relação agora…';render(true);
-  if(!root){state.error='Não foi possível confirmar o perfil-alvo.';render();return;}
-  var pending={relation:'friends',root:root,createdAt:new Date().toISOString(),phase:'single_navigation_pending',autoStart:true,navigationIssued:false};await savePending(pending);state.relationNavRunning=true;
-  if(hrefBelongsToRoot(location.href,root)&&(currentRelation()||selectedRelationV44R10())){await arriveAtFriends(pending);return;}
-  await clickFriendsFromProfile(pending);
+  if(state.relationNavRunning||state.relationAutoRunning||relationSnapshot().busy)return;state.interactionUntil=Date.now()+900;var root=resolveProfileRoot();state.activeRun='relation';state.mode='relation';state.relationPhysicalPct=0;state.error='';state.status='Comando recebido. Auditando a coleção ativa sem alterar a página…';render(true);
+  var api=await waitForRelationCore(25000),detected=api&&api.detectExactMaterializedRelation?api.detectExactMaterializedRelation():null;
+  if(!root&&!(detected&&detected.relation)){state.error='Não foi possível confirmar o perfil-alvo nem uma coleção relacional materializada.';render(true);return;}
+  if(!root)root='current_document_exact_relation';
+  if(!detected||!detected.relation){state.error='Nenhuma subcoleção nominal está materializada. Abra manualmente Amigos, Seguindo ou Seguidores e tente novamente.';render(true);return;}
+  return autoStartFriends({relation:detected.relation,root:root,autoStart:true});
 }
-async function resumePending(){
-  var postApi=post();
-  if(state.activeRun==='post'||state.postRunning||(postApi&&postApi.running))return Promise.resolve();
-  return loadPending().then(function(p){
-    if(!p)return;
-    if(Date.now()-Date.parse(p.createdAt||0)>180000)return clearPending();
-    /* V44R18: uma intenção relacional antiga nunca pode sequestrar uma coleta de postagem. */
-    var pc=postContext(true);
-    if(pc&&pc.ready&&!currentRelation())return clearPending();
-    state.activeRun='relation';state.mode='relation';
-    if(hrefBelongsToRoot(location.href,p.root)&&(currentRelation()||selectedRelationV44R10()))return arriveAtFriends(p);
-    if(p.navigationIssued){state.relationNavRunning=false;state.error='A única navegação não materializou a relação. A ferramenta não repetirá refresh automaticamente.';return clearPending().then(function(){render();});}
-    return clickFriendsFromProfile(p);
-  });
-}
+async function resumePending(){await clearPending();return false;}
 function startPost(){
   var p=post(),ctx=postContext(true);
   if(!p||!ctx.ready){state.error=ctx.reason||'Postagem não confirmada.';render(true);return;}
@@ -311,12 +320,13 @@ function selectedExportKindsV44R5(){
 function resetExportFormatsV44R5(){state.exportFormats={html:false,pdf:false,json:false,xlsx:false,csv:false};}
 function exportChooserHtmlV44R5(){
   if(!state.exportChooserOpen)return '';
-  function row(k,label){return '<label><input type="checkbox" data-format="'+k+'" value="'+k+'" '+(state.exportFormats[k]?'checked':'')+'> '+label+'</label>';}
+  function row(k,label){return '<label><input type="checkbox" data-format="'+k+'" value="'+k+'" '+(state.exportFormats[k]?'checked':'')+'> <span>'+label+'</span></label>';}
   return '<div id="fb-b35-v44-export-box" class="v44Export" role="group" aria-label="Escolha de formatos para download">'+
     '<b>Baixar formatos — '+(state.mode==='post'?'postagem':'relações')+'</b>'+
-    row('html','HTML')+row('pdf','PDF')+row('json','JSON')+row('xlsx','Excel XLSX')+row('csv','CSV')+
-    '<div class="v44IntegrityNote">Cada formato selecionado será baixado somente após seu clique e virá acompanhado de um laudo de integridade em PDF. O laudo identifica o arquivo, tamanho, SHA-256 e SHA-512.</div>'+
-    '<div class="v44ExportBtns"><button type="button" data-all>Marcar todos</button><button type="button" data-clear>Limpar</button><button type="button" data-go>Baixar selecionados</button><button type="button" data-cancel>Cancelar</button></div></div>';
+    '<div class="v44ExportGrid"><div class="v44ExportFormats">'+
+      row('html','HTML')+row('pdf','PDF')+row('json','JSON')+row('xlsx','Excel XLSX')+row('csv','CSV')+
+    '</div><div class="v44IntegrityNote"><span class="v44InfoIcon" aria-hidden="true">i</span><span>Cada formato selecionado será baixado somente após seu clique e virá acompanhado de um laudo de integridade em PDF.<br><br>O laudo identifica o arquivo, tamanho, SHA-256 e SHA-512.</span></div></div>'+
+    '<div class="v44ExportBtns"><button type="button" data-all>Marcar todos</button><button type="button" data-clear>Limpar</button><button type="button" data-go>⬇ Baixar selecionados</button><button type="button" data-cancel>Cancelar</button></div></div>';
 }
 function exportFormatChooser(ev){
   if(ev&&ev.preventDefault)ev.preventDefault();if(ev&&ev.stopPropagation)ev.stopPropagation();
@@ -330,7 +340,7 @@ function exportFormatChooser(ev){
      exportChooserOpen=true. Forçar a primeira renderização evita o impasse
      em que o seletor nunca aparece. */
   state.error='';state.exportChooserOpen=true;render(true);
-  setTimeout(function(){try{var box=document.getElementById('fb-b35-v44-export-box'),first=box&&box.querySelector('input[data-format]');if(first)first.focus();}catch(_){}},0);
+  setTimeout(function(){try{var box=document.getElementById('fb-b35-v44-export-box'),panel=document.getElementById(PANEL_ID),first=box&&box.querySelector('input[data-format]');if(panel)panel.scrollTop=panel.scrollHeight;if(first)first.focus({preventScroll:true});}catch(_){}},0);
 }
 async function runSelectedExportsV44R5(){
   var pmod=post(),api=core(),isPost=state.mode==='post'&&pmod&&pmod.hasPreparedExport&&pmod.hasPreparedExport();
@@ -396,12 +406,13 @@ function panelHtml(){
   if(state.minimized)return topControls+'<div class="v44Title v44TitleMini">Raspador de dados de relações e postagens do Facebook</div><div class="v44MiniState">'+esc(state.status)+'</div>';
   var secondary='<div class="v44Actions">';
   if(busy)secondary+='<button data-stop class="stop">Parar</button>';
-  if((state.activeRun==='relation'&&snap.available&&snap.collected>0)||(state.activeRun==='post'&&state.postExportReady))secondary+='<button data-export>Baixar formatos…</button>';
+  if((state.activeRun==='relation'&&snap.available&&(snap.collected>0||state.relationSuiteCompleted))||(state.activeRun==='post'&&state.postExportReady))secondary+='<button data-export>Baixar formatos…</button>';
   secondary+='<button data-close>Fechar</button></div>';
   return topControls+'<div class="v44Title">Raspador de dados de relações e postagens do Facebook</div>'+ 
     '<div class="v44Credit">Desenvolvido por <a href="https://www.instagram.com/guilhermecaselli/" target="_blank">Guilherme Caselli</a> · versão ativa <b>'+CONTROLLER_VERSION_V44R21R8+'</b></div>'+ 
     '<div class="v44ModeLabel">O que deseja raspar?</div>'+ 
-    '<div class="v44Modes"><button data-download-rel '+(busy?'disabled':'')+' class="'+(state.activeRun==='relation'?'active':'')+'"><b>Baixar relações do perfil</b></button><button data-start-post '+((!ctx.ready||busy)?'disabled':'')+' class="'+(state.activeRun==='post'?'active':'')+'"><b>Postagem aberta</b></button></div>'+ 
+    '<div class="v44Modes"><button data-download-rel '+(busy?'disabled':'')+' class="'+(state.activeRun==='relation'?'active':'')+'"><b>Coletar relações selecionadas</b></button><button data-start-post '+((!ctx.ready||busy)?'disabled':'')+' class="'+(state.activeRun==='post'?'active':'')+'"><b>Postagem aberta</b></button></div>'+
+    '<div class="v44RelationScope"><b>Relações do perfil</b><div><button type="button" data-rel-scope="all" class="'+(state.relationSelection==='all'?'selected':'')+'" '+(busy?'disabled':'')+'>Todas</button><button type="button" data-rel-scope="friends" class="'+(state.relationSelection==='friends'?'selected':'')+'" '+(busy?'disabled':'')+'>Amigos</button><button type="button" data-rel-scope="following" class="'+(state.relationSelection==='following'?'selected':'')+'" '+(busy?'disabled':'')+'>Seguindo</button><button type="button" data-rel-scope="followers" class="'+(state.relationSelection==='followers'?'selected':'')+'" '+(busy?'disabled':'')+'>Seguidores</button></div><small>Sem refresh, sem troca automática de URL e sem mistura semântica. “Todas” coleta a coleção nominal realmente materializada e registra as demais como não disponibilizadas nesta página.</small></div>'+ 
     '<label class="v44InteractionChoice'+(state.scrapeInteractions?' checked':'')+(busy?' disabled':'')+'"><input type="checkbox" data-scrape-interactions '+(state.scrapeInteractions?'checked':'')+' '+(busy?'disabled':'')+'><span class="v44InteractionChoiceText"><b>Raspar interações</b><small>Incluir Curtir, Amei, Força, Haha, Uau, Triste e Grr na mesma coleta da postagem.</small></span></label>'+
     statusBody()+secondary+exportChooserHtmlV44R5()+'<div id="fb-b35-v44-error" class="v44Error"></div>';
 }
@@ -409,7 +420,7 @@ function makePanel(force){
   hideLegacyPanel();var p=document.getElementById(PANEL_ID);
   if(!p){
     var style=document.createElement('style');style.id='fb-b35-unified-v44-style';
-    style.textContent='#'+PANEL_ID+'{position:fixed;z-index:2147483647;top:18px;right:18px;width:470px;max-width:calc(100vw - 24px);max-height:92vh;overflow:auto;background:#fff;color:#111;border:2px solid #111;border-radius:16px;padding:15px;font:13px Arial;box-shadow:0 14px 42px rgba(0,0,0,.36)}#'+PANEL_ID+' *{box-sizing:border-box}#'+PANEL_ID+' button{font:inherit;cursor:pointer}#'+PANEL_ID+' button:disabled{cursor:not-allowed;opacity:.46}.v44CloseX,.v44MinimizeX{position:absolute;top:8px;width:31px;height:31px;border:0!important;border-radius:50%!important;background:#eef2f7!important;color:#111!important;font:900 23px/30px Arial!important;padding:0!important;z-index:4}.v44CloseX{right:9px}.v44MinimizeX{right:45px}.v44CloseX:hover,.v44MinimizeX:hover{background:#dbe3ee!important}.v44Title{padding-right:72px;font-size:20px;font-weight:900;line-height:1.15}.v44Credit{font-size:12px;color:#666;margin:4px 0 13px}.v44Credit a{color:#1877f2;font-weight:800;text-decoration:none}.v44ModeLabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;font-weight:900;margin-bottom:7px}.v44Modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.v44Modes button{border:1px solid #cbd5e1;border-radius:12px;padding:14px 10px;text-align:center;background:#f8fafc;min-height:54px}.v44Modes button.active{border:2px solid #1877f2;background:#eff6ff;padding:13px 9px}.v44Modes b{display:block;font-size:13px}.v44InteractionChoice{display:flex;align-items:center;gap:10px;border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;background:#f8fafc;margin:-2px 0 10px;cursor:pointer}.v44InteractionChoice:hover{background:#f1f5f9}.v44InteractionChoice.checked{border:2px solid #1877f2;background:#eff6ff;padding:9px 11px}.v44InteractionChoice.disabled{cursor:not-allowed;opacity:.55}.v44InteractionChoice input{width:18px;height:18px;accent-color:#1877f2;flex:0 0 auto;margin:0}.v44InteractionChoiceText{display:block;min-width:0}.v44InteractionChoiceText b{display:block;font-size:13px}.v44InteractionChoiceText small{display:block;color:#64748b;font-size:10px;line-height:1.35;margin-top:2px}.v44Status{background:#f6f7f9;border:1px solid #d7dce3;border-radius:11px;padding:11px;margin-bottom:10px}.v44Status>b{display:block;margin-bottom:8px}.v44Line{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#526071;margin:5px 0 3px}.v44Line strong{color:#111;text-align:right;max-width:68%}.v44Line strong.bad{color:#991b1b}.v44Line strong.ok{color:#166534}.v44Bar{height:9px;background:#d9dde3;border-radius:99px;overflow:hidden}.v44Bar i{display:block;height:100%;background:#1877f2;transition:width .2s}.v44Bar.stage i{background:#7c3aed}.v44Bar.green i{background:#16a34a}.v44Actions{display:flex;gap:7px;flex-wrap:wrap}.v44Actions button{border:1px solid #9ca3af;border-radius:5px;padding:7px 10px;background:#f3f4f6;font-weight:800}.v44Actions .stop{background:#fee2e2;color:#991b1b;border-color:#fca5a5}.v44Error{display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:11px}.v44Error.show{display:block}.v44Export{margin-top:9px;border:2px solid #0ea5e9;border-radius:10px;padding:9px;background:#f0f9ff}.v44Export>b,.v44Export label{display:block;margin:4px 0}.v44ExportBtns{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}.v44ExportBtns button{font-weight:800}.v44IntegrityNote{font-size:10px;line-height:1.35;color:#0f172a;background:#e0f2fe;border-radius:7px;padding:7px;margin:7px 0}#'+PANEL_ID+'.v44Minimized{width:380px;max-height:86px;overflow:hidden;padding:12px 82px 10px 14px}.v44TitleMini{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0}.v44MiniState{font-size:10px;color:#64748b;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}';
+    style.textContent='#'+PANEL_ID+'{position:fixed;z-index:2147483647;top:18px;right:18px;width:470px;max-width:calc(100vw - 24px);max-height:92vh;overflow:auto;background:#fff;color:#111;border:2px solid #111;border-radius:16px;padding:15px;font:13px Arial;box-shadow:0 14px 42px rgba(0,0,0,.36)}#'+PANEL_ID+' *{box-sizing:border-box}#'+PANEL_ID+' button{font:inherit;cursor:pointer}#'+PANEL_ID+' button:disabled{cursor:not-allowed;opacity:.46}.v44CloseX,.v44MinimizeX{position:absolute;top:8px;width:31px;height:31px;border:0!important;border-radius:50%!important;background:#eef2f7!important;color:#111!important;font:900 23px/30px Arial!important;padding:0!important;z-index:4}.v44CloseX{right:9px}.v44MinimizeX{right:45px}.v44CloseX:hover,.v44MinimizeX:hover{background:#dbe3ee!important}.v44Title{padding-right:72px;font-size:20px;font-weight:900;line-height:1.15}.v44Credit{font-size:12px;color:#666;margin:4px 0 13px}.v44Credit a{color:#1877f2;font-weight:800;text-decoration:none}.v44ModeLabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;font-weight:900;margin-bottom:7px}.v44Modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.v44Modes button{border:1px solid #cbd5e1;border-radius:12px;padding:14px 10px;text-align:center;background:#f8fafc;min-height:54px}.v44Modes button.active{border:2px solid #1877f2;background:#eff6ff;padding:13px 9px}.v44Modes b{display:block;font-size:13px}.v44RelationScope{border:1px solid #cbd5e1;border-radius:12px;padding:9px 10px;margin:-2px 0 10px;background:#f8fafc}.v44RelationScope>b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#475569;margin-bottom:6px}.v44RelationScope>div{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.v44RelationScope button{border:1px solid #cbd5e1;border-radius:8px;padding:7px 4px;background:#fff}.v44RelationScope button.selected{border:2px solid #1877f2;background:#eff6ff;padding:6px 3px;color:#0756b8}.v44RelationScope small{display:block;font-size:9px;line-height:1.3;color:#64748b;margin-top:6px}.v44InteractionChoice{display:flex;align-items:center;gap:10px;border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;background:#f8fafc;margin:-2px 0 10px;cursor:pointer}.v44InteractionChoice:hover{background:#f1f5f9}.v44InteractionChoice.checked{border:2px solid #1877f2;background:#eff6ff;padding:9px 11px}.v44InteractionChoice.disabled{cursor:not-allowed;opacity:.55}.v44InteractionChoice input{width:18px;height:18px;accent-color:#1877f2;flex:0 0 auto;margin:0}.v44InteractionChoiceText{display:block;min-width:0}.v44InteractionChoiceText b{display:block;font-size:13px}.v44InteractionChoiceText small{display:block;color:#64748b;font-size:10px;line-height:1.35;margin-top:2px}.v44Status{background:#f6f7f9;border:1px solid #d7dce3;border-radius:11px;padding:11px;margin-bottom:10px}.v44Status>b{display:block;margin-bottom:8px}.v44Line{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#526071;margin:5px 0 3px}.v44Line strong{color:#111;text-align:right;max-width:68%}.v44Line strong.bad{color:#991b1b}.v44Line strong.ok{color:#166534}.v44Bar{height:9px;background:#d9dde3;border-radius:99px;overflow:hidden}.v44Bar i{display:block;height:100%;background:#1877f2;transition:width .2s}.v44Bar.stage i{background:#7c3aed}.v44Bar.green i{background:#16a34a}.v44Actions{display:flex;gap:7px;flex-wrap:wrap}.v44Actions button{border:1px solid #9ca3af;border-radius:5px;padding:7px 10px;background:#f3f4f6;font-weight:800}.v44Actions .stop{background:#fee2e2;color:#991b1b;border-color:#fca5a5}.v44Error{display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:11px}.v44Error.show{display:block}.v44Export{margin-top:9px;border:2px solid #0ea5e9;border-radius:10px;padding:9px;background:#f0f9ff}.v44Export>b{display:block;margin:0 0 7px}.v44ExportGrid{display:grid;grid-template-columns:minmax(125px,.78fr) minmax(220px,1.45fr);gap:10px;align-items:stretch}.v44ExportFormats{display:flex;flex-direction:column;justify-content:center;gap:3px}.v44ExportFormats label{display:flex;align-items:center;gap:4px;margin:0;min-height:21px;font-weight:700}.v44ExportFormats input{margin:0}.v44IntegrityNote{font-size:10px;line-height:1.35;color:#0f172a;background:#e0f2fe;border:1px solid #93c5fd;border-radius:8px;padding:9px;display:flex;align-items:flex-start;gap:8px;margin:0}.v44InfoIcon{display:inline-grid;place-items:center;flex:0 0 18px;width:18px;height:18px;border-radius:50%;background:#1877f2;color:#fff;font-weight:900;font-size:12px}.v44ExportBtns{display:grid;grid-template-columns:1.08fr .72fr 1.55fr .82fr;gap:7px;margin-top:9px}.v44ExportBtns button{font-weight:800;min-width:0;padding:7px 6px;white-space:nowrap;font-size:11px}.v44ExportBtns button[data-go]{background:#1877f2;color:#fff;border-color:#1877f2}.v44ExportBtns button[data-go]:hover{background:#0b5ed7}.v44ExportBtns button[data-go]:disabled{background:#93c5fd;border-color:#93c5fd}@media(max-width:520px){.v44ExportGrid{grid-template-columns:1fr}.v44IntegrityNote{font-size:9px;padding:7px}.v44ExportBtns{grid-template-columns:1fr 1fr}.v44ExportBtns button{font-size:10px}}#'+PANEL_ID+'.v44Minimized{width:380px;max-height:86px;overflow:hidden;padding:12px 82px 10px 14px}.v44TitleMini{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0}.v44MiniState{font-size:10px;color:#64748b;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}';
     (document.head||document.documentElement).appendChild(style);p=document.createElement('div');p.id=PANEL_ID;document.documentElement.appendChild(p);bindPanel(p);
   }
   p.classList.toggle('v44Minimized',!!state.minimized);var html=panelHtml();if(force||p.__v44Html!==html){p.__v44Html=html;p.innerHTML=html;syncPanelErrorV44R13(p);}return p;
@@ -421,9 +432,10 @@ function bindPanel(p){
   p.addEventListener('change',function(ev){var interaction=ev.target&&ev.target.closest&&ev.target.closest('[data-scrape-interactions]');if(interaction){state.scrapeInteractions=!!interaction.checked;state.status=state.scrapeInteractions?'Raspar interações marcado. A opção será aplicada ao iniciar a postagem.':'Raspar interações desmarcado. A postagem será coletada sem abrir a lista de reações.';render(true);return;}var cb=ev.target&&ev.target.closest&&ev.target.closest('[data-format]');if(cb)state.exportFormats[cb.value]=!!cb.checked;});
   p.addEventListener('click',function(ev){var b=ev.target&&ev.target.closest&&ev.target.closest('button');if(!b||b.disabled)return;ev.preventDefault();ev.stopPropagation();state.interactionUntil=Date.now()+700;
     if(b.hasAttribute('data-stop'))return;
+    if(b.hasAttribute('data-rel-scope')){state.relationSelection=String(b.getAttribute('data-rel-scope')||'all');state.relationSuiteCompleted=false;state.relationSuiteResults={};state.relationSuiteTarget='';state.status='Escopo selecionado: '+(state.relationSelection==='all'?'Todas as relações disponíveis':relationLabel(state.relationSelection))+'.';return render(true);}
     if(b.hasAttribute('data-minimize')){state.minimized=!state.minimized;return render(true);}
     if(b.hasAttribute('data-download-rel'))return beginFriendsDownload();if(b.hasAttribute('data-start-post'))return startPost();if(b.hasAttribute('data-export'))return exportFormatChooser();if(b.hasAttribute('data-close'))return closePanel();
-    if(b.hasAttribute('data-all')){['html','pdf','json','xlsx','csv'].forEach(function(k){state.exportFormats[k]=true;});return render(true);}if(b.hasAttribute('data-clear')){resetExportFormatsV44R5();return render(true);}if(b.hasAttribute('data-go'))return runSelectedExportsV44R5();if(b.hasAttribute('data-cancel')){state.exportChooserOpen=false;resetExportFormatsV44R5();return render(true);}
+    if(b.hasAttribute('data-all')){['html','pdf','json','xlsx','csv'].forEach(function(k){state.exportFormats[k]=true;});render(true);setTimeout(function(){try{var panel=document.getElementById(PANEL_ID);if(panel)panel.scrollTop=panel.scrollHeight;}catch(_){}},0);return;}if(b.hasAttribute('data-clear')){resetExportFormatsV44R5();render(true);setTimeout(function(){try{var panel=document.getElementById(PANEL_ID);if(panel)panel.scrollTop=panel.scrollHeight;}catch(_){}},0);return;}if(b.hasAttribute('data-go'))return runSelectedExportsV44R5();if(b.hasAttribute('data-cancel')){state.exportChooserOpen=false;resetExportFormatsV44R5();return render(true);}
   },true);
 }
 function render(force){if(state.closed)return;if(!force&&Date.now()<state.interactionUntil)return;hideLegacyPanel();makePanel(!!force);}

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Raspador de dados de relações e postagens do Facebook",
-  "version": "44.21.19",
-  "description": "Base estável 44.21.15 preservada; correção cirúrgica na camada DOM/GraphQL: IDs canônicos, fusão sem duplicatas e terminal por registros únicos. PHOTO e mídia/coletores de REEL congelados.",
+  "version": "44.21.28",
+  "description": "Base estável 44.21.27 congelada. Alteração isolada de apresentação do seletor de formatos e recuperação/hiperlink de vídeo no HTML exportado, sem mudanças no motor de relações, comentários, reações, mídias de foto, navegação ou scroll.",
   "minimum_chrome_version": "114",
   "permissions": [
     "tabs",
@@ -46,6 +46,7 @@
       "js": [
         "unified_preflight.js",
         "content.js",
+        "exact_relation_collector_442127.js",
         "post_reaction_bridge.js",
         "post_comment_bridge.js",
         "reel_evidence_bridge.js",
@@ -55,5 +56,6 @@
       "run_at": "document_idle",
       "world": "ISOLATED"
     }
-  ]
+  ],
+  "version_name": "44.21.28 — base 44.21.27 congelada; seletor visível e vídeo disponível no HTML quando a URL for observada"
 }
